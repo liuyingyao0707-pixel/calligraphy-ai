@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>颜体结构助手</title>
+<style>
+body{
+  margin:0;
+  font-family:"Noto Serif SC",serif;
+  background:#f5efe6;
+  text-align:center;
+}
+.container{
+  max-width:600px;
+  margin:40px auto;
+}
+.upload{
+  border:2px dashed #aaa;
+  padding:40px;
+  cursor:pointer;
+}
+img{
+  max-width:100%;
+  margin-top:20px;
+}
+button{
+  margin-top:20px;
+  padding:10px 20px;
+}
+.result{
+  margin-top:20px;
+  line-height:1.8;
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <h2>颜体结构助手</h2>
+  <div class="upload" onclick="fileInput.click()">
+    点击上传书法图片
+  </div>
+  <input type="file" id="fileInput" accept="image/*" style="display:none"/>
+  <img id="preview"/>
+  <button onclick="analyze()">开始分析</button>
+  <div class="result" id="result"></div>
+</div>
+
+<script>
+let fileData = "";
+let mimeType = "image/jpeg";
+
+document.getElementById("fileInput").onchange = function(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  mimeType = file.type || "image/jpeg";
+  const reader = new FileReader();
+  reader.onload = function(){
+    fileData = reader.result.split(",")[1];
+    document.getElementById("preview").src = reader.result;
+  };
+  reader.readAsDataURL(file);
+};
+
+async function analyze(){
+  const resDiv = document.getElementById("result");
+  if(!fileData){
+    resDiv.innerHTML = "请先上传图片";
+    return;
+  }
+  resDiv.innerHTML = "分析中...";
+
+  try{
+    const res = await fetch("/api/analyze", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({
+        image: fileData,
+        mimeType: mimeType
+      })
+    });
+
+    const data = await res.json();
+
+    if(data.error){
+      resDiv.innerHTML = "错误：" + data.error;
+      return;
+    }
+
+    let adviceHtml = "";
+    if(Array.isArray(data.advice)){
+      adviceHtml = data.advice.map(item => `<div>• ${item.title}：${item.content}</div>`).join("");
+    }
+
+    resDiv.innerHTML = `
+      <div>字：${data.character || "未识别"}</div>
+      <div>总分：${data.totalScore ?? "-"}</div>
+      <div>等级：${data.level || "-"}</div>
+      <div>评价：${data.summary || "-"}</div>
+      ${adviceHtml}
+      <div>建议：${data.nextStep || "-"}</div>
+    `;
+  }catch(e){
+    resDiv.innerHTML = "请求失败（网络问题）";
+  }
+}
+</script>
+</body>
+</html>
