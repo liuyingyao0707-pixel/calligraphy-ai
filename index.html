@@ -336,9 +336,7 @@ body::before{
 <div class="wrap">
 
   <!-- 上传区 -->
-  <div class="upload-zone" id="uz"
-    onclick="document.getElementById('fi').click()"
-    ondragover="ev(event,1)" ondragleave="ev(event,0)" ondrop="drop(event)">
+  <div class="upload-zone" id="uz">
     <svg class="upload-svg" viewBox="0 0 52 52" fill="none">
       <rect x="3" y="3" width="46" height="46" stroke="#8b6a4a" stroke-width="1.4"/>
       <line x1="18.3" y1="3" x2="18.3" y2="49" stroke="#8b6a4a" stroke-width=".8" opacity=".4"/>
@@ -355,7 +353,7 @@ body::before{
     <div class="upload-hint">点击选择图片，或将图片拖放至此处</div>
     <div class="upload-hint2">建议上传单字裁切清晰、居中的图片</div>
   </div>
-  <input type="file" id="fi" accept="image/*" style="display:none" onchange="loadf(this.files[0])">
+  <input type="file" id="fi" accept="image/*" style="display:none">
 
   <div class="workspace" id="ws">
     <!-- 左栏 -->
@@ -385,11 +383,11 @@ body::before{
           </svg>
         </div>
         <div class="img-bar">
-          <button class="btn-sm on" id="gbtn" onclick="tgrid()">✦ 九宫格已显示</button>
-          <button class="btn-sm" onclick="resetApp()">重新上传</button>
+          <button class="btn-sm on" id="gbtn" type="button">✦ 九宫格已显示</button>
+          <button class="btn-sm" id="reset-btn" type="button">重新上传</button>
         </div>
       </div>
-      <button class="btn-main" id="abtn" onclick="analyzeImage()">
+      <button class="btn-main" id="abtn" type="button">
         <span id="abtn-txt">✦ 开始结构评析</span>
       </button>
       <div class="err" id="emsg"></div>
@@ -438,7 +436,7 @@ body::before{
         </div>
 
         <div class="action-row">
-          <button class="btn-speak" id="speak-btn" onclick="toggleSpeak()">
+          <button class="btn-speak" id="speak-btn" type="button">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
               <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
@@ -446,7 +444,7 @@ body::before{
             </svg>
             语音播报
           </button>
-          <button class="btn-re" onclick="analyzeImage()">重新评析</button>
+          <button class="btn-re" id="reanalyze-btn" type="button">重新评析</button>
         </div>
       </div>
     </div>
@@ -618,6 +616,37 @@ window.analyzeImage = async function(){
     atxt.textContent='✦ 开始结构评析';
   }
 }
+
+document.addEventListener('DOMContentLoaded', function () {
+  const uz = document.getElementById('uz');
+  const fi = document.getElementById('fi');
+  const gbtn = document.getElementById('gbtn');
+  const resetBtn = document.getElementById('reset-btn');
+  const abtn = document.getElementById('abtn');
+  const speakBtn = document.getElementById('speak-btn');
+  const reanalyzeBtn = document.getElementById('reanalyze-btn');
+
+  if (uz && fi) {
+    uz.addEventListener('click', function () { fi.click(); });
+    uz.addEventListener('dragover', function (e) { window.ev(e, true); });
+    uz.addEventListener('dragleave', function (e) { window.ev(e, false); });
+    uz.addEventListener('drop', function (e) { window.drop(e); });
+  }
+
+  if (fi) {
+    fi.addEventListener('change', function (e) {
+      const f = e.target.files && e.target.files[0];
+      if (f) window.loadf(f);
+    });
+  }
+
+  if (gbtn) gbtn.addEventListener('click', window.tgrid);
+  if (resetBtn) resetBtn.addEventListener('click', window.resetApp);
+  if (abtn) abtn.addEventListener('click', window.analyzeImage);
+  if (speakBtn) speakBtn.addEventListener('click', window.toggleSpeak);
+  if (reanalyzeBtn) reanalyzeBtn.addEventListener('click', window.analyzeImage);
+});
+
 </script>
 </body>
 </html>
