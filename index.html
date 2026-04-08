@@ -3,107 +3,541 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>颜体结构助手</title>
+<title>颜体结构助手｜AI书法评析</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@400;700;900&display=swap" rel="stylesheet">
 <style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --paper:#fdf8f0;--paper2:#f5ede0;--paper3:#ede0cc;
+  --ink:#3a1a08;--ink2:#5a3a1a;
+  --stone:#8b6a4a;--stone2:#b09070;--stone3:#c8a878;--stone4:#d4bea0;
+  --ver:#b03c1e;--ver2:#c84820;
+  --sage:#2d7a3a;--gold:#8b5a00;
+  --card:rgba(255,250,240,0.9);
+}
 body{
-  margin:0;
-  font-family:"Noto Serif SC",serif;
-  background:#f5efe6;
+  font-family:'Noto Serif SC','STSong','SimSun',Georgia,serif;
+  background:var(--paper);
+  min-height:100vh;color:var(--ink);
+  position:relative;overflow-x:hidden;
+}
+
+/* ── 宣纸底纹 ── */
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:
+    linear-gradient(160deg,var(--paper) 0%,var(--paper2) 50%,var(--paper3) 100%),
+    repeating-linear-gradient(0deg,rgba(139,106,74,.018) 0,rgba(139,106,74,.018) 1px,transparent 1px,transparent 56px),
+    repeating-linear-gradient(90deg,rgba(139,106,74,.011) 0,rgba(139,106,74,.011) 1px,transparent 1px,transparent 96px);
+}
+
+/* ── 左侧装饰墨迹柱 ── */
+.ink-pillar{
+  position:fixed;left:0;top:0;bottom:0;width:6px;z-index:2;
+  background:linear-gradient(180deg,transparent 0%,rgba(58,26,8,.12) 20%,rgba(58,26,8,.18) 50%,rgba(58,26,8,.08) 80%,transparent 100%);
+}
+.ink-pillar-r{
+  position:fixed;right:0;top:0;bottom:0;width:6px;z-index:2;
+  background:linear-gradient(180deg,transparent 0%,rgba(58,26,8,.07) 30%,rgba(58,26,8,.12) 60%,rgba(58,26,8,.05) 90%,transparent 100%);
+}
+
+/* ── HEADER ── */
+.hd{
+  position:relative;z-index:10;
+  padding:22px 40px 20px;
   text-align:center;
+  border-bottom:1px solid var(--stone4);
 }
-.container{
-  max-width:600px;
-  margin:40px auto;
+.hd-center{position:relative;display:inline-block}
+.hd-top-deco{display:flex;align-items:center;justify-content:center;gap:0;margin-bottom:10px}
+.hd-deco-line{height:1px;width:48px;background:linear-gradient(to right,transparent,rgba(200,168,120,.45));flex-shrink:0}
+.hd-deco-line+.hd-deco-line,
+.hd-gem+.hd-deco-line{background:linear-gradient(to left,transparent,rgba(200,168,120,.45))}
+.hd-bottom-deco{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:10px}
+.hd-bottom-deco .hd-deco-line{width:72px}
+.hd-gem{color:var(--stone3);font-size:12px;letter-spacing:.1em}
+/* 标题使用Google Fonts装载的衬线体，模拟颜体风格 */
+.hd-title{
+  font-size:36px;
+  letter-spacing:.22em;
+  font-weight:900;
+  color:var(--ink);
+  margin-bottom:6px;
+  line-height:1.1;
+  font-family:'Ma Shan Zheng','Noto Serif SC','STSong',serif;
+  text-shadow:1px 1px 0 rgba(58,26,8,.08);
 }
-.upload{
-  border:2px dashed #aaa;
-  padding:40px;
-  cursor:pointer;
+.hd-sub{font-size:11px;letter-spacing:.16em;color:var(--stone2)}
+/* 毛笔：右上角绝对定位 */
+.hd-brush{
+  position:absolute;right:24px;top:50%;transform:translateY(-50%);
+  opacity:.18;pointer-events:none;
 }
-img{
-  max-width:100%;
-  margin-top:20px;
+
+/* ── 中间分隔线 ── */
+.hd-rule{
+  display:flex;align-items:center;justify-content:center;gap:14px;
+  padding:0 40px;margin-top:-1px;
+  border-bottom:1px solid var(--stone4);
+  height:32px;
 }
-button{
-  margin-top:20px;
-  padding:10px 20px;
+.hd-rule-line{flex:1;height:1px;background:linear-gradient(to right,transparent,rgba(200,168,120,.4),transparent)}
+.hd-rule-gem{color:var(--stone3);font-size:13px;letter-spacing:.3em}
+
+/* ── MAIN ── */
+.wrap{
+  position:relative;z-index:1;
+  max-width:920px;margin:0 auto;
+  padding:24px 24px 52px;
 }
-.result{
-  margin-top:20px;
-  line-height:1.8;
+
+/* ── 墨迹背景字 ── */
+.bg-char{
+  position:fixed;right:48px;top:50%;transform:translateY(-50%);
+  font-size:320px;line-height:1;color:rgba(58,26,8,.028);
+  font-weight:bold;z-index:0;pointer-events:none;
+  letter-spacing:0;user-select:none;
+}
+
+/* ── UPLOAD ── */
+.upload-zone{
+  border:1.5px dashed var(--stone4);border-radius:14px;
+  padding:52px 32px;text-align:center;cursor:pointer;
+  background:rgba(255,250,240,.72);
+  transition:border-color .2s,background .2s;user-select:none;
+  position:relative;z-index:1;
+}
+.upload-zone:hover,.upload-zone.drag{
+  border-color:var(--ver);background:rgba(176,60,30,.03);
+}
+.upload-svg{width:50px;height:50px;margin:0 auto 14px;opacity:.3}
+.upload-label{font-size:15px;color:var(--ink2);letter-spacing:.07em;margin-bottom:6px}
+.upload-hint{font-size:12px;color:var(--stone2);letter-spacing:.04em}
+.upload-hint2{font-size:11px;color:var(--stone2);opacity:.65;margin-top:4px}
+
+/* ── WORKSPACE ── */
+.workspace{display:none;gap:22px;position:relative;z-index:1}
+.workspace.show{display:grid;grid-template-columns:1fr 1fr}
+
+/* LEFT */
+.preview-wrap{
+  border-radius:14px;overflow:hidden;
+  border:1px solid rgba(200,168,120,.35);
+  background:#fff;box-shadow:0 4px 20px rgba(58,26,8,.07);
+}
+.preview-inner{position:relative;aspect-ratio:1/1}
+.preview-inner img{width:100%;height:100%;object-fit:contain;display:block}
+.grid-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.img-bar{
+  padding:9px 13px;background:rgba(253,248,240,.97);
+  border-top:1px solid rgba(200,168,120,.2);
+  display:flex;justify-content:space-between;align-items:center;gap:8px;
+}
+.btn-sm{
+  font-family:inherit;font-size:11px;letter-spacing:.05em;
+  border-radius:7px;padding:5px 11px;cursor:pointer;
+  border:1px solid rgba(200,168,120,.35);
+  background:transparent;color:var(--stone);transition:all .15s;
+}
+.btn-sm:hover{border-color:var(--stone);color:var(--ink2)}
+.btn-sm.on{border-color:rgba(176,60,30,.3);color:var(--ver);background:rgba(176,60,30,.05)}
+.btn-main{
+  width:100%;margin-top:11px;padding:13px;
+  font-family:inherit;font-size:15px;letter-spacing:.16em;
+  border:none;border-radius:11px;cursor:pointer;
+  background:linear-gradient(130deg,#7a1e00,#c03a00 55%,#7a1e00);
+  color:#fdf5e6;box-shadow:0 4px 16px rgba(176,60,30,.24);
+  transition:all .25s;display:flex;align-items:center;justify-content:center;gap:9px;
+}
+.btn-main:hover{box-shadow:0 6px 22px rgba(176,60,30,.33);filter:brightness(1.07)}
+.btn-main:disabled{background:rgba(176,60,30,.28);box-shadow:none;cursor:not-allowed;filter:none}
+.spinner{
+  width:14px;height:14px;flex-shrink:0;
+  border:2px solid rgba(253,245,230,.28);border-top-color:#fdf5e6;
+  border-radius:50%;animation:spin .75s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.err{
+  margin-top:9px;padding:9px 13px;
+  border:1px solid rgba(176,60,30,.2);background:rgba(176,60,30,.05);
+  border-radius:8px;font-size:12px;color:var(--ver);
+  display:none;letter-spacing:.03em;line-height:1.6;
+}
+.err.show{display:block}
+
+/* RIGHT */
+.right-col{display:flex;flex-direction:column;gap:11px;min-height:400px}
+.waiting{
+  flex:1;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:40px 24px;
+  border:1.5px dashed rgba(200,168,120,.3);border-radius:14px;
+  text-align:center;color:var(--stone2);font-size:13px;
+  letter-spacing:.08em;line-height:2.2;
+}
+.waiting-glyph{font-size:64px;color:rgba(139,90,43,.2);margin-bottom:14px;line-height:1;font-weight:bold}
+
+/* RESULT */
+.result{display:none;flex-direction:column;gap:11px;animation:fup .4s ease}
+.result.show{display:flex}
+@keyframes fup{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.card{
+  background:var(--card);border-radius:13px;
+  border:1px solid rgba(200,168,120,.3);padding:14px 15px;
+}
+.top-card{box-shadow:0 2px 12px rgba(58,26,8,.06)}
+.top-row{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:11px}
+.char-big{font-size:60px;line-height:1;color:var(--ink);font-weight:bold}
+.char-lv{
+  font-size:11px;color:var(--stone);
+  border:1px solid rgba(200,168,120,.32);border-radius:5px;
+  padding:2px 8px;display:inline-block;letter-spacing:.05em;margin-top:5px;
+}
+.score-box{text-align:right}
+.score-num{font-size:48px;line-height:1;font-weight:bold;transition:color .3s}
+.score-num.g{color:var(--sage)}.score-num.w{color:var(--gold)}.score-num.b{color:var(--ver)}
+.score-lbl{font-size:10px;color:var(--stone2);margin-top:3px;letter-spacing:.05em}
+.summary-box{
+  padding:9px 12px;background:rgba(58,26,8,.04);
+  border-left:3px solid var(--stone3);
+  font-size:13px;color:var(--ink2);letter-spacing:.05em;line-height:1.65;
+}
+.dim-hd{font-size:10px;color:var(--stone2);letter-spacing:.14em;margin-bottom:10px;text-align:center}
+.dim-body{display:flex;gap:14px;align-items:center}
+#rcvs{flex-shrink:0}
+.dim-list{flex:1;display:flex;flex-direction:column;gap:8px}
+.dim-row{display:flex;align-items:center;gap:9px}
+.dim-name{font-size:11px;color:var(--stone);min-width:56px;letter-spacing:.02em}
+.dim-track{flex:1;height:4px;background:rgba(200,168,120,.18);border-radius:2px;overflow:hidden}
+.dim-fill{height:100%;border-radius:2px;transition:width .7s cubic-bezier(.4,0,.2,1)}
+.dim-fill.g{background:var(--sage)}.dim-fill.w{background:#c8a800}.dim-fill.b{background:var(--ver)}
+.dim-val{font-size:12px;font-weight:bold;min-width:22px;text-align:right}
+.dim-val.g{color:var(--sage)}.dim-val.w{color:var(--gold)}.dim-val.b{color:var(--ver)}
+.adv-hd{font-size:10px;color:var(--stone2);letter-spacing:.14em;margin-bottom:8px}
+.adv-item{display:flex;align-items:flex-start;gap:9px;padding:9px 10px;border-radius:9px;margin-bottom:5px}
+.adv-item:last-child{margin-bottom:0}
+.adv-item.good{background:rgba(45,122,58,.07)}
+.adv-item.warn{background:rgba(139,90,0,.07)}
+.adv-item.error{background:rgba(176,60,30,.06)}
+.adv-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.adv-dot.good{background:var(--sage)}.adv-dot.warn{background:var(--gold)}.adv-dot.error{background:var(--ver)}
+.adv-title{font-size:12px;font-weight:bold;margin-bottom:2px;letter-spacing:.03em}
+.adv-title.good{color:var(--sage)}.adv-title.warn{color:var(--gold)}.adv-title.error{color:var(--ver)}
+.adv-body{font-size:11px;color:var(--ink2);line-height:1.6;letter-spacing:.02em}
+.quote-card{background:rgba(58,26,8,.04);border:1px solid rgba(200,168,120,.2)}
+.quote-lbl{font-size:10px;color:var(--stone2);letter-spacing:.14em;margin-bottom:6px}
+.quote-txt{
+  font-size:12px;color:var(--ink2);line-height:1.8;letter-spacing:.04em;
+  font-style:italic;padding-left:10px;border-left:2px solid var(--stone3);margin-bottom:10px;
+}
+.next-lbl{font-size:10px;color:var(--stone2);letter-spacing:.14em;margin-bottom:5px}
+.next-txt{font-size:12px;color:var(--ink2);line-height:1.6;letter-spacing:.03em}
+.next-txt::before{content:'→  ';color:var(--stone3)}
+.action-row{display:flex;gap:8px;align-items:stretch}
+.btn-speak{
+  flex-shrink:0;padding:10px 14px;
+  font-family:inherit;font-size:11px;letter-spacing:.06em;
+  border:1px solid rgba(200,168,120,.4);
+  background:transparent;color:var(--stone);
+  border-radius:9px;cursor:pointer;transition:all .15s;
+  display:flex;align-items:center;gap:6px;
+}
+.btn-speak:hover{border-color:var(--stone);color:var(--ink2)}
+.btn-speak.speaking{border-color:var(--ver);color:var(--ver);background:rgba(176,60,30,.05)}
+.btn-re{
+  flex:1;padding:10px;
+  font-family:inherit;font-size:12px;letter-spacing:.12em;
+  border:1px solid rgba(176,60,30,.25);
+  background:transparent;color:var(--ver);
+  border-radius:9px;cursor:pointer;transition:all .15s;
+}
+.btn-re:hover{background:rgba(176,60,30,.05);border-color:rgba(176,60,30,.4)}
+
+/* ── FOOTER ── */
+.ft{
+  position:relative;z-index:1;
+  border-top:1px solid var(--stone4);
+  padding:0 40px;
+}
+/* 版权 */
+.ft-copy{
+  padding:12px 0 20px;
+  text-align:center;
+  font-size:10px;color:var(--stone2);letter-spacing:.06em;line-height:2;
+}
+.ft-school{
+  font-size:11px;color:var(--stone);letter-spacing:.1em;margin-bottom:3px;
+}
+
+/* ── MOBILE ── */
+@media(max-width:680px){
+  .hd{padding:18px 16px 16px;gap:12px}
+  .hd-right{display:none}
+  .hd-rule{padding:0 16px}
+  .wrap{padding:20px 14px 40px}
+  .workspace.show{grid-template-columns:1fr}
+  .bg-char{display:none}
+  .ft{padding:0 16px}
+  .ft-project-bar{flex-direction:column;align-items:flex-start;gap:10px}
 }
 </style>
 </head>
 <body>
-<div class="container">
-  <h2>颜体结构助手</h2>
-  <div class="upload" onclick="fileInput.click()">
-    点击上传书法图片
+
+<div class="ink-pillar"></div>
+<div class="ink-pillar-r"></div>
+
+<!-- 背景大字（装饰） -->
+<div class="bg-char">永</div>
+
+<header class="hd">
+  <div class="hd-center">
+    <!-- 顶部装饰线 -->
+    <div class="hd-top-deco">
+      <div class="hd-deco-line"></div>
+      <svg width="120" height="16" viewBox="0 0 120 16" fill="none">
+        <line x1="0" y1="8" x2="42" y2="8" stroke="rgba(200,168,120,.5)" stroke-width=".8"/>
+        <circle cx="50" cy="8" r="2" fill="rgba(176,60,30,.35)"/>
+        <circle cx="60" cy="8" r="3" fill="rgba(176,60,30,.55)"/>
+        <circle cx="70" cy="8" r="2" fill="rgba(176,60,30,.35)"/>
+        <line x1="78" y1="8" x2="120" y2="8" stroke="rgba(200,168,120,.5)" stroke-width=".8"/>
+      </svg>
+      <div class="hd-deco-line"></div>
+    </div>
+    <!-- 主标题：用特殊字体渲染 -->
+    <h1 class="hd-title">顏體結構助手</h1>
+    <div class="hd-sub">AI 辅助颜体书法结构训练</div>
+    <!-- 底部装饰 -->
+    <div class="hd-bottom-deco">
+      <div class="hd-deco-line"></div>
+      <div class="hd-gem">✦</div>
+      <div class="hd-deco-line"></div>
+    </div>
   </div>
-  <input type="file" id="fileInput" accept="image/*" style="display:none"/>
-  <img id="preview"/>
-  <button onclick="analyze()">开始分析</button>
-  <div class="result" id="result"></div>
+  <!-- 右侧毛笔（绝对定位） -->
+  <div class="hd-brush">
+    <svg width="28" height="108" viewBox="0 0 28 108" fill="none">
+      <rect x="10" y="0" width="8" height="64" rx="4" fill="rgba(139,90,43,.55)"/>
+      <line x1="10" y1="16" x2="18" y2="16" stroke="rgba(180,140,90,.35)" stroke-width=".5"/>
+      <line x1="10" y1="30" x2="18" y2="30" stroke="rgba(180,140,90,.35)" stroke-width=".5"/>
+      <line x1="10" y1="44" x2="18" y2="44" stroke="rgba(180,140,90,.35)" stroke-width=".5"/>
+      <path d="M8 64 Q14 69 20 64 L18 78 Q14 83 10 78 Z" fill="rgba(80,50,20,.45)"/>
+      <path d="M10 78 Q14 81 18 78 L16 96 Q14 104 12 96 Z" fill="rgba(30,22,14,.65)"/>
+      <path d="M12 96 Q14 106 16 96" stroke="rgba(15,10,5,.4)" stroke-width=".7" fill="none"/>
+      <circle cx="21" cy="100" r="1.8" fill="rgba(15,10,5,.18)" transform="rotate(-15 21 100)"/>
+    </svg>
+  </div>
+</header>
+
+
+
+<div class="wrap">
+
+  <!-- 上传区 -->
+  <div class="upload-zone" id="uz"
+    onclick="document.getElementById('fi').click()"
+    ondragover="ev(event,1)" ondragleave="ev(event,0)" ondrop="drop(event)">
+    <svg class="upload-svg" viewBox="0 0 52 52" fill="none">
+      <rect x="3" y="3" width="46" height="46" stroke="#8b6a4a" stroke-width="1.4"/>
+      <line x1="18.3" y1="3" x2="18.3" y2="49" stroke="#8b6a4a" stroke-width=".8" opacity=".4"/>
+      <line x1="33.7" y1="3" x2="33.7" y2="49" stroke="#8b6a4a" stroke-width=".8" opacity=".4"/>
+      <line x1="3" y1="18.3" x2="49" y2="18.3" stroke="#8b6a4a" stroke-width=".8" opacity=".4"/>
+      <line x1="3" y1="33.7" x2="49" y2="33.7" stroke="#8b6a4a" stroke-width=".8" opacity=".4"/>
+      <circle cx="26" cy="26" r="3.5" fill="#8b6a4a" opacity=".55"/>
+      <line x1="19" y1="26" x2="33" y2="26" stroke="#8b6a4a" stroke-width="1" opacity=".4"/>
+      <line x1="26" y1="19" x2="26" y2="33" stroke="#8b6a4a" stroke-width="1" opacity=".4"/>
+      <line x1="3" y1="3" x2="49" y2="49" stroke="#8b6a4a" stroke-width=".6" opacity=".15" stroke-dasharray="3 5"/>
+      <line x1="49" y1="3" x2="3" y2="49" stroke="#8b6a4a" stroke-width=".6" opacity=".15" stroke-dasharray="3 5"/>
+    </svg>
+    <div class="upload-label">上传颜体临写作品</div>
+    <div class="upload-hint">点击选择图片，或将图片拖放至此处</div>
+    <div class="upload-hint2">建议上传单字裁切清晰、居中的图片</div>
+  </div>
+  <input type="file" id="fi" accept="image/*" style="display:none" onchange="loadf(this.files[0])">
+
+  <div class="workspace" id="ws">
+    <!-- 左栏 -->
+    <div>
+      <div class="preview-wrap">
+        <div class="preview-inner">
+          <img id="pimg" src="" alt="书法作品">
+          <svg class="grid-svg" id="gsv" viewBox="0 0 300 300" preserveAspectRatio="none">
+            <line x1="100" y1="0" x2="100" y2="300" stroke="rgba(139,90,43,.32)" stroke-width="1.5"/>
+            <line x1="200" y1="0" x2="200" y2="300" stroke="rgba(139,90,43,.32)" stroke-width="1.5"/>
+            <line x1="0" y1="100" x2="300" y2="100" stroke="rgba(139,90,43,.32)" stroke-width="1.5"/>
+            <line x1="0" y1="200" x2="300" y2="200" stroke="rgba(139,90,43,.32)" stroke-width="1.5"/>
+            <line x1="0" y1="0" x2="300" y2="300" stroke="rgba(139,90,43,.1)" stroke-width=".8" stroke-dasharray="4 6"/>
+            <line x1="300" y1="0" x2="0" y2="300" stroke="rgba(139,90,43,.1)" stroke-width=".8" stroke-dasharray="4 6"/>
+            <circle cx="150" cy="150" r="4.5" fill="rgba(176,60,30,.48)"/>
+            <line x1="137" y1="150" x2="163" y2="150" stroke="rgba(176,60,30,.48)" stroke-width="1.2"/>
+            <line x1="150" y1="137" x2="150" y2="163" stroke="rgba(176,60,30,.48)" stroke-width="1.2"/>
+            <text x="50"  y="54"  text-anchor="middle" font-size="9" fill="rgba(139,90,43,.4)" font-family="serif">乾</text>
+            <text x="150" y="54"  text-anchor="middle" font-size="9" fill="rgba(139,90,43,.4)" font-family="serif">离</text>
+            <text x="250" y="54"  text-anchor="middle" font-size="9" fill="rgba(139,90,43,.4)" font-family="serif">巽</text>
+            <text x="50"  y="154" text-anchor="middle" font-size="9" fill="rgba(139,90,43,.4)" font-family="serif">坎</text>
+            <text x="150" y="157" text-anchor="middle" font-size="11" fill="rgba(176,60,30,.7)" font-family="serif" font-weight="bold">中宫</text>
+            <text x="250" y="154" text-anchor="middle" font-size="9" fill="rgba(139,90,43,.4)" font-family="serif">震</text>
+            <text x="50"  y="254" text-anchor="middle" font-size="9" fill="rgba(139,90,43,.4)" font-family="serif">艮</text>
+            <text x="150" y="254" text-anchor="middle" font-size="9" fill="rgba(139,90,43,.4)" font-family="serif">坤</text>
+            <text x="250" y="254" text-anchor="middle" font-size="9" fill="rgba(139,90,43,.4)" font-family="serif">兑</text>
+          </svg>
+        </div>
+        <div class="img-bar">
+          <button class="btn-sm on" id="gbtn" onclick="tgrid()">✦ 九宫格已显示</button>
+          <button class="btn-sm" onclick="resetApp()">重新上传</button>
+        </div>
+      </div>
+      <button class="btn-main" id="abtn" onclick="analyzeImage()">
+        <span id="abtn-txt">✦ 开始结构评析</span>
+      </button>
+      <div class="err" id="emsg"></div>
+    </div>
+
+    <!-- 右栏 -->
+    <div class="right-col">
+      <div class="waiting" id="wt">
+        <div class="waiting-glyph">颜</div>
+        <div>上传临写作品后<br>点击「开始结构评析」<br>获取颜体结构评析报告</div>
+      </div>
+
+      <div class="result" id="res">
+        <div class="card top-card">
+          <div class="top-row">
+            <div>
+              <div class="char-big" id="rchar">—</div>
+              <div class="char-lv" id="rlv">—</div>
+            </div>
+            <div class="score-box">
+              <div class="score-num" id="rsc">—</div>
+              <div class="score-lbl">综合评分</div>
+            </div>
+          </div>
+          <div class="summary-box" id="rsum">—</div>
+        </div>
+
+        <div class="card">
+          <div class="dim-hd">— 五维结构分析 —</div>
+          <div class="dim-body">
+            <canvas id="rcvs" width="148" height="148"></canvas>
+            <div class="dim-list" id="dlist"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="adv-hd">— 结构评析 —</div>
+          <div id="alist"></div>
+        </div>
+
+        <div class="card quote-card">
+          <div class="quote-lbl">书论参考</div>
+          <div class="quote-txt" id="rquote">—</div>
+          <div class="next-lbl">下一步建议</div>
+          <div class="next-txt" id="rnext">—</div>
+        </div>
+
+        <div class="action-row">
+          <button class="btn-speak" id="speak-btn" onclick="toggleSpeak()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+              <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+            </svg>
+            语音播报
+          </button>
+          <button class="btn-re" onclick="analyzeImage()">重新评析</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
+<!-- FOOTER -->
+<footer class="ft">
+  <div class="ft-copy">
+    <div>本工具基于九宫格理论对颜体书法结构进行辅助评析，评分结果仅供学习参考</div>
+    <div>建议上传裁切紧凑、字形居中的单字图像以提高准确性</div>
+    <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(212,190,160,.35)">
+      <div class="ft-school">绍兴大学兰亭书法艺术学院</div>
+      <div style="font-size:10px;color:var(--stone2);letter-spacing:.06em;margin-top:2px">
+        大学生创新训练项目阶段性成果 · 浙江省研究生教学改革项目支持
+      </div>
+    </div>
+  </div>
+</footer>
+
 <script>
-let fileData = "";
-let mimeType = "image/jpeg";
+const API_BASE = "https://dawn-frog-4ea0.liuyingyao0707.workers.dev";
+const DIMS = ['结构布局','中宫把握','笔画比例','重心平衡','气韵整体'];
+let curFile=null, showGrid=true, busy=false, speaking=false;
 
-document.getElementById("fileInput").onchange = function(e){
-  const file = e.target.files[0];
-  if(!file) return;
-  mimeType = file.type || "image/jpeg";
-  const reader = new FileReader();
-  reader.onload = function(){
-    fileData = reader.result.split(",")[1];
-    document.getElementById("preview").src = reader.result;
-  };
-  reader.readAsDataURL(file);
-};
-
-async function analyze(){
-  const resDiv = document.getElementById("result");
-  if(!fileData){
-    resDiv.innerHTML = "请先上传图片";
-    return;
-  }
-  resDiv.innerHTML = "分析中...";
-
-  try{
-    const res = await fetch("/api/analyze", {
-      method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({
-        image: fileData,
-        mimeType: mimeType
-      })
-    });
-
-    const data = await res.json();
-
-    if(data.error){
-      resDiv.innerHTML = "错误：" + data.error;
-      return;
-    }
-
-    let adviceHtml = "";
-    if(Array.isArray(data.advice)){
-      adviceHtml = data.advice.map(item => `<div>• ${item.title}：${item.content}</div>`).join("");
-    }
-
-    resDiv.innerHTML = `
-      <div>字：${data.character || "未识别"}</div>
-      <div>总分：${data.totalScore ?? "-"}</div>
-      <div>等级：${data.level || "-"}</div>
-      <div>评价：${data.summary || "-"}</div>
-      ${adviceHtml}
-      <div>建议：${data.nextStep || "-"}</div>
-    `;
-  }catch(e){
-    resDiv.innerHTML = "请求失败（网络问题）";
-  }
+function ev(e,on){e.preventDefault();document.getElementById('uz').classList.toggle('drag',on)}
+function drop(e){
+  e.preventDefault();document.getElementById('uz').classList.remove('drag');
+  const f=e.dataTransfer.files[0];
+  if(f&&f.type.startsWith('image/'))loadf(f);
 }
-</script>
-</body>
-</html>
+function loadf(f){
+  if(!f)return;
+  curFile=f;
+  document.getElementById('pimg').src=URL.createObjectURL(f);
+  document.getElementById('uz').style.display='none';
+  document.getElementById('ws').classList.add('show');
+  document.getElementById('res').classList.remove('show');
+  document.getElementById('wt').style.display='flex';
+  hideErr();stopSpeak();
+}
+function tgrid(){
+  showGrid=!showGrid;
+  document.getElementById('gsv').style.display=showGrid?'':'none';
+  const b=document.getElementById('gbtn');
+  b.textContent=showGrid?'✦ 九宫格已显示':'○ 显示九宫格';
+  b.classList.toggle('on',showGrid);
+}
+function resetApp(){
+  curFile=null;
+  document.getElementById('fi').value='';
+  document.getElementById('uz').style.display='';
+  document.getElementById('ws').classList.remove('show');
+  document.getElementById('res').classList.remove('show');
+  document.getElementById('wt').style.display='flex';
+  hideErr();stopSpeak();
+  showGrid=true;
+  document.getElementById('gsv').style.display='';
+  document.getElementById('gbtn').textContent='✦ 九宫格已显示';
+  document.getElementById('gbtn').classList.add('on');
+}
+function cls(v){return v>=82?'g':v>=65?'w':'b'}
+function showErr(msg){const e=document.getElementById('emsg');e.textContent=msg;e.classList.add('show')}
+function hideErr(){document.getElementById('emsg').classList.remove('show')}
+
+function drawRadar(scores){
+  const cvs=document.getElementById('rcvs');
+  const ctx=cvs.getContext('2d');
+  const W=148,H=148,cx=74,cy=74,R=52,n=DIMS.length;
+  ctx.clearRect(0,0,W,H);
+  const pts=DIMS.map((_,i)=>{const a=(i/n)*2*Math.PI-Math.PI/2;return{x:cx+R*Math.cos(a),y:cy+R*Math.sin(a)}});
+  [.25,.5,.75,1].forEach(lv=>{
+    ctx.beginPath();
+    pts.forEach((p,i)=>{const dx=p.x-cx,dy=p.y-cy;i?ctx.lineTo(cx+dx*lv,cy+dy*lv):ctx.moveTo(cx+dx*lv,cy+dy*lv)});
+    ctx.closePath();ctx.strokeStyle='rgba(139,106,74,.14)';ctx.lineWidth=.8;ctx.stroke();
+  });
+  pts.forEach(p=>{ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(p.x,p.y);ctx.strokeStyle='rgba(139,106,74,.17)';ctx.lineWidth=.8;ctx.stroke()});
+  const vals=DIMS.map(nm=>(scores[nm]||0)/100);
+  ctx.beginPath();
+  pts.forEach((p,i)=>{const dx=p.x-cx,dy=p.y-cy;i?ctx.lineTo(cx+dx*vals[i],cy+dy*vals[i]):ctx.moveTo(cx+dx*vals[i],cy+dy*vals[i])});
+  ctx.closePath();
+  ctx.fillStyle='rgba(176,60,30,.12)';ctx.fill();
+  ctx.strokeStyle='rgba(176,60,30,.65)';ctx.lineWidth=1.6;ctx.stroke();
+  pts.forEach((p,i)=>{const dx=p.x-cx,dy=p.y-cy;ctx.beginPath();ctx.arc(cx+dx*vals[i],cy+dy*vals[i],3,0,2*Math.PI);ctx.fillStyle='rgba(176,60,30,.75)';ctx.fill()});
+  ctx.font='8.5px serif';ctx.fillStyle='#5a3a1a';ctx.textAlign='center';
+  pts.forEach((p,i)=>{const dx=p.x-cx,dy=p.y-cy,len=Math.sqrt(dx*dx+dy*dy);ctx.fillText(DIMS[i],cx+(len+18)*dx/len,cy+(len+14)*dy/len+3)});
+}
+function renderDims(scores){
+  document.getElementById('dlist').innerHTML=DIMS.map(nm=>{
+    const v=Math.round(scores[nm]||0),c=cls(v);
+    return`<div class="dim-row"><span class="dim-name">${nm}</span><div class="dim-track"><div class="dim-fill ${c}" style="width:${v}%"></div></div><span class="dim-val ${c}">${v}</span></div>`;
+  }).join('');
+}
+func
