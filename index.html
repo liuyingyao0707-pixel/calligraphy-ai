@@ -472,13 +472,13 @@ const API_BASE = "https://dawn-frog-4ea0.liuyingyao0707.workers.dev";
 const DIMS = ['结构布局','中宫把握','笔画比例','重心平衡','气韵整体'];
 let curFile=null, showGrid=true, busy=false, speaking=false;
 
-function ev(e,on){e.preventDefault();document.getElementById('uz').classList.toggle('drag',on)}
-function drop(e){
+window.ev = function(e,on){e.preventDefault();document.getElementById('uz').classList.toggle('drag',on)}
+window.drop = function(e){
   e.preventDefault();document.getElementById('uz').classList.remove('drag');
   const f=e.dataTransfer.files[0];
   if(f&&f.type.startsWith('image/'))loadf(f);
 }
-function loadf(f){
+window.loadf = function(f){
   if(!f)return;
   curFile=f;
   document.getElementById('pimg').src=URL.createObjectURL(f);
@@ -488,14 +488,14 @@ function loadf(f){
   document.getElementById('wt').style.display='flex';
   hideErr();stopSpeak();
 }
-function tgrid(){
+window.tgrid = function(){
   showGrid=!showGrid;
   document.getElementById('gsv').style.display=showGrid?'':'none';
   const b=document.getElementById('gbtn');
   b.textContent=showGrid?'✦ 九宫格已显示':'○ 显示九宫格';
   b.classList.toggle('on',showGrid);
 }
-function resetApp(){
+window.resetApp = function(){
   curFile=null;
   document.getElementById('fi').value='';
   document.getElementById('uz').style.display='';
@@ -540,4 +540,84 @@ function renderDims(scores){
     return`<div class="dim-row"><span class="dim-name">${nm}</span><div class="dim-track"><div class="dim-fill ${c}" style="width:${v}%"></div></div><span class="dim-val ${c}">${v}</span></div>`;
   }).join('');
 }
-func
+function renderAdvice(advice){
+  document.getElementById('alist').innerHTML=(advice||[]).map(a=>{
+    const c=a.level==='good'?'good':a.level==='warn'?'warn':'error';
+    return`<div class="adv-item ${c}"><div class="adv-dot ${c}"></div><div><div class="adv-title ${c}">${a.title||''}</div><div class="adv-body">${a.content||''}</div></div></div>`;
+  }).join('');
+}
+function stopSpeak(){
+  if('speechSynthesis' in window)window.speechSynthesis.cancel();
+  speaking=false;
+  const btn=document.getElementById('speak-btn');
+  if(btn)btn.classList.remove('speaking');
+}
+window.toggleSpeak = function(){
+  if(speaking){stopSpeak();return;}
+  const char=document.getElementById('rchar').textContent||'';
+  const score=document.getElementById('rsc').textContent||'';
+  const level=document.getElementById('rlv').textContent||'';
+  const summary=document.getElementById('rsum').textContent||'';
+  const next=document.getElementById('rnext').textContent||'';
+  const advItems=[...document.querySelectorAll('.adv-title,.adv-body')];
+  let advText='';
+  for(let i=0;i<advItems.length;i+=2){
+    const title=advItems[i]?.textContent||'';
+    const body=advItems[i+1]?.textContent||'';
+    if(title)advText+=`${title}：${body}。`;
+  }
+  const text=`识别字为${char}。综合评分${score}分，等级${level}。总评：${summary}。${advText}下一步建议：${next}`;
+  if(!('speechSynthesis' in window)){alert('当前设备不支持语音播报');return;}
+  window.speechSynthesis.cancel();
+  const utter=new SpeechSynthesisUtterance(text);
+  utter.lang='zh-CN';utter.rate=0.95;utter.pitch=1.0;
+  utter.onend=()=>{speaking=false;document.getElementById('speak-btn').classList.remove('speaking')};
+  utter.onerror=()=>{speaking=false;document.getElementById('speak-btn').classList.remove('speaking')};
+  window.speechSynthesis.speak(utter);
+  speaking=true;
+  document.getElementById('speak-btn').classList.add('speaking');
+}
+
+window.analyzeImage = async function(){
+  if(!curFile||busy)return;
+  busy=true;hideErr();stopSpeak();
+  const abtn=document.getElementById('abtn');
+  const atxt=document.getElementById('abtn-txt');
+  abtn.disabled=true;
+  atxt.innerHTML='<span class="spinner"></span>正在研析字势……';
+  try{
+    const b64=await new Promise((ok,err)=>{
+      const r=new FileReader();
+      r.onload=()=>ok(r.result.split(',')[1]);
+      r.onerror=err;r.readAsDataURL(curFile);
+    });
+    const resp=await fetch(`${API_BASE}/api/analyze`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({image:b64,mimeType:curFile.type||'image/jpeg'})
+    });
+    const data=await resp.json();
+    if(!resp.ok||data.error)throw new Error(data?.error||'分析失败，请重试');
+    document.getElementById('rchar').textContent=data.character||'？';
+    const sc=Math.round(data.totalScore||0);
+    const scEl=document.getElementById('rsc');
+    scEl.textContent=sc;scEl.className='score-num '+cls(sc);
+    document.getElementById('rlv').textContent=data.level||'—';
+    document.getElementById('rsum').textContent=data.summary||'—';
+    document.getElementById('rquote').textContent=data.classicQuote||'—';
+    document.getElementById('rnext').textContent=data.nextStep||'—';
+    renderDims(data.scores||{});
+    drawRadar(data.scores||{});
+    renderAdvice(data.advice||[]);
+    document.getElementById('wt').style.display='none';
+    document.getElementById('res').classList.add('show');
+  }catch(e){
+    showErr(e.message||'分析失败，请重试');
+  }finally{
+    busy=false;abtn.disabled=false;
+    atxt.textContent='✦ 开始结构评析';
+  }
+}
+</script>
+</body>
+</html>
